@@ -12,7 +12,8 @@ import argparse
 
 parser = argparse.ArgumentParser(description="A prattle client")
 
-parser.add_argument("-n", "--name", dest="name", help="name to be prepended in messages (default: machine name)")
+parser.add_argument("-n", "--name", dest="name", help="name to be prepended in messages (default: machine name)",
+                    default=gethostname())
 parser.add_argument("-s", "--server", dest="server", default="127.0.0.1",
                     help="server hostname or IP address (default: 127.0.0.1)")
 parser.add_argument("-p", "--port", dest="port", type=int, default=12345,
@@ -24,7 +25,7 @@ args = parser.parse_args()
 # initialize socket with given info
 s = socket()
 try:
-    s.connect((args.server, args.port))
+    s.connect((gethostbyname(args.server), args.port))
 except Exception as e:
     print("There was an error when creating the socket.\n", e)
     sys.exit(1)
@@ -42,7 +43,10 @@ while True:
         for input in read_s:
             # socket has a message to be displayed from the server
             if input == s:
-                line = s.recv(args.port).decode("utf-8").strip("\n")
+                line = s.recv(1024).decode("utf-8")#.strip("\n")
+                if line == "":
+                    print("The server terminated the connection.")
+                    sys.exit(1)
                 if args.verbose:
                     print("    Message recieved from", args.server, "on port", args.port)
                 print(line)
@@ -50,7 +54,7 @@ while True:
             # stdin has a message to be sent - print and send over socket
             else:
                 # format with <name> says: 
-                line = "<" + args.name + "> says: " + str(sys.stdin.readline())
+                line = args.name + " says: " + str(sys.stdin.readline()).strip("\n")
                 try:
                     s.send(bytes(line, 'utf-8'))
                     if args.verbose:
@@ -61,7 +65,7 @@ while True:
                     print(e)
                     sys.exit(1)
 
-                sys.stdout.write(line)
+                print(line)
                 sys.stdout.flush()
 
     except Exception as e:
