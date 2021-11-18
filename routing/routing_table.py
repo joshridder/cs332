@@ -70,8 +70,6 @@ class RoutingTable:
         match = None
         longest_match = -1
         for entry in self._entries:
-            print("--------------------------------")
-            print(entry)
             dest_network_part = dest.network_part_as_L3Addr(entry.mask_numbits)
             if entry.destaddr == dest_network_part and entry.mask_numbits > longest_match:
                 match = entry
