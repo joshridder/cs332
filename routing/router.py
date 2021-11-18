@@ -11,25 +11,48 @@ class Router:
 
     def add_interface(self, iface: L3Interface):
         self._ifaces.append(iface)
-        # TODO: add an interface route to routing table
+        self._routing_table.add_iface_route(iface.get_number(), iface.get_netaddr(), iface.get_mask(), L3Addr("0.0.0.0"))
 
     def route_packet(self, pkt: L3Packet, incoming_iface: L3Interface) -> int:
         '''Route the given packet that arrived on the given interface (iface == None
         if the packet originated on this device). Return the interface # it was sent out,
         or None, if dropped or accepted to be processed on this host.'''
 
-        # TODO: implement this.
         # Check the following and drop pkt if any are true:
-        #   bcast packets (including directed bcast)
+        #   bcast packets (directed bcasts handled later)
         #   dest on same network as packet arrived on: drop
-        # If dest addr is one of the interfaces, accept and do not forward.
+        if pkt.dest.is_bcast():
+            print(f"{pkt} dropped because dest is bcast.")
+            return None
+            
+        if incoming_iface.on_same_network(pkt.dest):
+            print(f"{pkt} dropped because dest on same network as packet arrived on.")
+            return None
+
+        # drops packet if it's a directed bcast, accepts it if the packet's dest is on interface's network
+        for interface in self._ifaces:
+
+            # drops packet if it is a directed bcast packet
+            if pkt.dest == interface.get_directed_bcast_addr():
+                print(f"{pkt} dropped because dest is directed bcast.")
+                return None
+
+            # If dest addr is one of the interfaces, accept and do not forward.
+            if interface.get_addr() == pkt.dest:
+                return None
+
         # Decrement ttl and if 0, drop.
+        pkt.ttl -= 1
+        if pkt.ttl == 0:
+            return None
+
         # Get best route entry. Return the interface number of best match.
+        entry = self._routing_table.get_best_route(pkt.dest)
 
         # NOTE: print out what the algorithm is doing just before each return statement.
         # e.g., print(f"{pkt} accepted because dest matches iface {iface.get_number()}")
-
         print(f'{pkt} routed to interface {entry.iface_num}')
+
         return entry.iface_num
 
     def set_default_route(self, nexthop: str):

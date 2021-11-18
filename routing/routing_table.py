@@ -27,8 +27,7 @@ class RoutingTable:
 
         # Make sure the netaddr passed in is actually a network address -- host part
         # is all 0s.
-        if netaddr.host_part_as_L3Addr(mask_numbits).as_int() != 0:
-            netaddr = netaddr.network_part_as_L3Addr(mask_numbits)
+        netaddr = netaddr.network_part_as_L3Addr(mask_numbits)
         
         # Create a RoutingTableEntry and append to self._entries.
         self._entries.append(RoutingTableEntry(iface_num, netaddr, mask_numbits, nexthop, is_local))
@@ -38,15 +37,21 @@ class RoutingTable:
 
         is_local = nexthop.as_str() == "0.0.0.0"
 
-        # TODO: find the iface the nexthop address is accessible through.  raise ValueError if it
+        # find the iface the nexthop address is accessible through.  raise ValueError if it
         # is not accessible out any interface. Store iface in out_iface.
+        out_iface = None
+        for iface in ifaces:
+            if iface.on_same_network(nexthop):
+                out_iface = iface
+        if out_iface is None:
+            raise ValueError("L3Addr is not accessible through any stored interface.")
 
         ic(str(out_iface))
         # Make sure the destaddr passed in is actually a network address -- host part
         # is all 0s.
-        # TODO: implement, just as you did in previous method.
+        netaddr = netaddr.network_part_as_L3Addr(mask_numbits)
 
-        # TODO: Create routing table entry and add to list, similar to previous method.
+        self._entries.append(RoutingTableEntry(out_iface.get_number(), netaddr, mask_numbits, nexthop, is_local))
 
     def __str__(self):
         ret = f"RoutingTable:\n"
@@ -61,16 +66,16 @@ class RoutingTable:
     def get_best_route(self, dest: L3Addr) -> RoutingTableEntry:  # or None
         '''Use longest-prefix-match (LPM) to find and return the best route
         entry for the given dest address'''
-        # TODO: return None if no matches (which means no default route)
+        # return None if no matches (which means no default route)
         match = None
         longest_match = -1
         for entry in self._entries:
+            print("--------------------------------")
+            print(entry)
             dest_network_part = dest.network_part_as_L3Addr(entry.mask_numbits)
-            #anded_result = format( & dest_network_part.as_int(), '032b')
             if entry.destaddr == dest_network_part and entry.mask_numbits > longest_match:
                 match = entry
                 longest_match = entry.mask_numbits
-
         return match
 
 

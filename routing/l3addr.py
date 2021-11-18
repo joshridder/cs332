@@ -57,8 +57,7 @@ class L3Addr:
         return f'{self._as_str}'
 
     def is_bcast(self) -> bool:
-        # TODO
-        pass
+        return self._as_str == "255.255.255.255"
 
 
 if __name__ == "__main__":
