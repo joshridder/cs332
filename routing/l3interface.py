@@ -32,7 +32,7 @@ class L3Interface:
 
     def on_same_network(self, addr: L3Addr) -> bool:
         '''return True if the given addr is on this interface's network.'''
-        return (maskToInt(self.get_mask()) & self.get_netaddr().as_int()) == (maskToInt(self.get_mask()) & addr.as_int())
+        return self.get_netaddr().as_int() == (maskToInt(self.get_mask()) & addr.as_int())
 
     def get_addr(self):
         return self._addr
